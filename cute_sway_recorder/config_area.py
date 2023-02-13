@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Optional, Union
 from PySide6 import QtCore
 
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QMessageBox, QSpinBox, QStyle, QVBoxLayout, QLineEdit
+from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QMessageBox,\
+    QSpinBox, QStyle, QVBoxLayout, QLineEdit, QComboBox
 
 from .common import SelectedArea, SelectedScreen
 from .group_file_dest import FileDestGroup
@@ -15,6 +16,7 @@ class Config:
     selection: Union[SelectedScreen, SelectedArea]
     file_dest: Path
     include_audio: bool
+    audio_device: str
     delay: int
     flags: str
 
@@ -28,6 +30,7 @@ class ConfigArea(QVBoxLayout):
         self.file_dest_box = FileDestGroup(window)
 
         self.checkbox_use_audio = QCheckBox("Record audio")
+        self.combobox_audio_device = QComboBox()
         self.delay_spinbox = QSpinBox()
         self.flags = QLineEdit()
 
@@ -41,6 +44,7 @@ class ConfigArea(QVBoxLayout):
         bottom.addWidget(QLabel("Delay (secs):"))
         bottom.addWidget(self.delay_spinbox)
         bottom.addWidget(self.checkbox_use_audio)
+        bottom.addWidget(self.combobox_audio_device)
         bottom.addStretch()
         self.addLayout(bottom)
 
@@ -70,6 +74,7 @@ class ConfigArea(QVBoxLayout):
             selection,
             self.file_dest_box.file_dest,
             self.checkbox_use_audio.isChecked(),
+            self.combobox_audio_device.currentText(),
             self.delay_spinbox.value(),
             self.flags.text()
         )
@@ -79,3 +84,4 @@ class ConfigArea(QVBoxLayout):
         self.file_dest_box.set_buttons_enabled(enabled)
         self.delay_spinbox.setEnabled(enabled)
         self.checkbox_use_audio.setEnabled(enabled)
+        self.combobox_audio_device.setEnabled(enabled)

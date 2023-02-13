@@ -37,6 +37,7 @@ def wf_recorder(
     file_dst,
     flags,
     include_audio: bool = False,
+    audio_device: str = ""
 ) -> subprocess.Popen:
     """
     Launches a `wf-recorder` process and returns a Popen object representing it. Records a portion
@@ -51,16 +52,31 @@ def wf_recorder(
 
     params = ["wf-recorder", "-f", file_dst]
     if include_audio:
-        params.append("--audio")
+        if audio_device:
+            params.append("--audio=" + audio_device)
+        else:
+            params.append("--audio")
     if isinstance(selection, SelectedArea):
         params.append("--geometry")
         params.append(selection)
     if isinstance(selection, SelectedScreen):
         params.append("--output")
         params.append(selection)
-    params.extend(flags) # adds all items of flags to the end of params
+    params.extend(flags)  # adds all items of flags to the end of params
     return subprocess.Popen(params)
 
+
+def get_pulse_sinks():
+    sinks = []
+    result = subprocess.run(['pactl', 'list', 'sources'],
+                            stdout=subprocess.PIPE)
+    output = result.stdout.decode('utf-8')
+    lines = output.split("\n")
+    for line in lines:
+        if 'Name: ' in line:
+            sink_name = line.strip().split('Name: ')[1]
+            sinks.append(sink_name)
+    return sinks
 
 class CuteRecorderQtApplication(QMainWindow):
     """
@@ -78,14 +94,19 @@ class CuteRecorderQtApplication(QMainWindow):
         self.setWindowTitle("Cute Sway Recorder")
         self.config_area = ConfigArea(self)
 
-        ## Create labels
+        # Find audio sinks
+        sinks = get_pulse_sinks()
+        for sink in sinks:
+            self.config_area.combobox_audio_device.addItem(sink)
+
+        # Create labels
         self.lbl_status = QLabel("Not recording")
 
-        ## Create buttons
+        # Create buttons
         self.btn_start_recording = QPushButton("Start recording")
         self.btn_stop_recording = QPushButton(STOP_RECORDING)
 
-        ## Connect buttons on-click actions
+        # Connect buttons on-click actions
         self.btn_start_recording.clicked.connect(self.btn_onclick_start_recording)
         self.btn_stop_recording.clicked.connect(self.btn_onclick_stop_recording)
         self.btn_stop_recording.setEnabled(False)
@@ -201,6 +222,7 @@ class CuteRecorderQtApplication(QMainWindow):
             conf.file_dest,
             conf.flags,
             include_audio=conf.include_audio,
+            audio_device=conf.audio_device
         )
 
     def btn_onclick_stop_recording(self):
